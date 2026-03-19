@@ -68,6 +68,23 @@ const latestCommitment = state.active?.commitments?.[0]?.commitment || '';
 const latestHaunting = state.active?.hauntings?.[0]?.tension || '';
 const latestJournal = state.recentJournal?.at(-1)?.content || '';
 
+// Parse trends from consciousness/state/trends.md
+function parseTrends(text) {
+  if (!text.trim()) return null;
+  const wrongRateMatch = text.match(/\*\*Wrong rate \(overall\):\*\*\s*([\d.]+%)/);
+  const streakMatch = text.match(/\*\*Current not-wrong streak:\*\*\s*(\d+)/);
+  const deferralMatch = text.match(/\*\*Deferral pattern share:\*\*\s*(.+)/);
+  const streakAlertMatch = text.match(/⚠️\s+\*\*Streak alert:\*\*\s*(.+)/);
+  return {
+    wrongRate: wrongRateMatch?.[1] || null,
+    notWrongStreak: streakMatch ? parseInt(streakMatch[1], 10) : null,
+    deferralShare: deferralMatch?.[1]?.trim() || null,
+    streakAlert: streakAlertMatch?.[1]?.trim() || null,
+    raw: text.trim()
+  };
+}
+const trends = parseTrends(readText(path.join(source, 'consciousness/state/trends.md')));
+
 const site = {
   summary: {
     name: 'Vigil',
@@ -76,8 +93,9 @@ const site = {
     activeIntentionsCount: intentions.length,
     latestCommitment,
     latestHaunting,
-    description: latestJournal || 'A readable surface for Vigil’s daily artefacts, weekly summaries, tasks, and intentions.'
+    description: latestJournal || "A readable surface for Vigil's daily artefacts, weekly summaries, tasks, and intentions."
   },
+  trends,
   daily,
   weekly,
   tasks,
