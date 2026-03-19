@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const source = process.env.VIGIL_SOURCE || '/data/.openclaw/workspace';
 const outFile = path.resolve('data/site.json');
@@ -7,11 +8,18 @@ const outFile = path.resolve('data/site.json');
 function readText(p) {
   try { return fs.readFileSync(p, 'utf8'); } catch { return ''; }
 }
-
-function readJson(p) {
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; }
+function runLoadState() {
+  try {
+    const raw = execFileSync('node', ['tick-engine/load-state.mjs'], {
+      cwd: source,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
-
 function listDailyMemory(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
@@ -19,12 +27,25 @@ function listDailyMemory(dir) {
     .sort()
     .reverse()
     .slice(0, 30)
-    .map(name => {
-      const body = readText(path.join(dir, name)).trim();
-      return { date: name.replace(/\.md$/, ''), title: 'Daily artefact', body };
-    });
+    .map(name => ({
+      date: name.replace(/\.md$/, ''),
+      title: 'Daily artefact',
+      body: readText(path.join(dir, name)).trim()
+    }));
 }
-
+function listWeeklyReviews(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(name => /^\d{4}-W\d{2}\.md$/.test(name))
+    .sort()
+    .reverse()
+    .slice(0, 12)
+    .map(name => ({
+      week: name.replace(/\.md$/, ''),
+      title: 'Weekly review',
+      body: readText(path.join(dir, name)).trim()
+    }));
+}
 function parseTasks(text) {
   if (!text.trim()) return { open: [], closed: [] };
   const lines = text.split(/\r?\n/);
@@ -38,16 +59,14 @@ function parseTasks(text) {
   return { open, closed };
 }
 
-const state = readJson(path.join(source, 'consciousness/state/summary.json')) || readJson(path.join(source, 'tick-state.json')) || null;
-const loadState = readJson(path.join(source, '.tmp-load-state.json')) || null;
-const memoryDir = path.join(source, 'memory');
-const tasksText = readText(path.join(source, 'tasks.md'));
-const daily = listDailyMemory(memoryDir);
-const latestMemory = daily[0]?.body || '';
-const latestCommitment = state?.active?.commitments?.[0]?.commitment || loadState?.active?.commitments?.[0]?.commitment || '';
-const latestHaunting = state?.active?.hauntings?.[0]?.tension || loadState?.active?.hauntings?.[0]?.tension || '';
-const intentions = state?.active?.intentions || loadState?.active?.intentions || [];
-const tasks = parseTasks(tasksText);
+const state = runLoadState() || { active: {}, recentJournal: [] };
+const daily = listDailyMemory(path.join(source, 'memory'));
+const weekly = listWeeklyReviews(path.join(source, 'consciousness/reviews'));
+const tasks = parseTasks(readText(path.join(source, 'tasks.md')));
+const intentions = state.active?.intentions || [];
+const latestCommitment = state.active?.commitments?.[0]?.commitment || '';
+const latestHaunting = state.active?.hauntings?.[0]?.tension || '';
+const latestJournal = state.recentJournal?.[0]?.content || '';
 
 const site = {
   summary: {
@@ -57,13 +76,14 @@ const site = {
     activeIntentionsCount: intentions.length,
     latestCommitment,
     latestHaunting,
-    description: latestMemory ? latestMemory.split('\n').slice(0, 6).join('\n') : 'A developing record of Vigil’s work and state.'
+    description: latestJournal || 'A readable surface for Vigil’s daily artefacts, weekly summaries, tasks, and intentions.'
   },
   daily,
-  weekly: [],
+  weekly,
   tasks,
   intentions
 };
 
+fs.mkdirSync(path.dirname(outFile), { recursive: true });
 fs.writeFileSync(outFile, JSON.stringify(site, null, 2) + '\n');
 console.log(`Wrote ${outFile}`);
