@@ -66,7 +66,7 @@ const tasks = parseTasks(readText(path.join(source, 'tasks.md')));
 const intentions = state.active?.intentions || [];
 const latestCommitment = state.active?.commitments?.[0]?.commitment || '';
 const latestHaunting = state.active?.hauntings?.[0]?.tension || '';
-const latestJournal = state.recentJournal?.[0]?.content || '';
+const latestJournal = state.recentJournal?.at(-1)?.content || '';
 
 const site = {
   summary: {
