@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vigil</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="shell">
+    <div>
+      <h1>Vigil</h1>
+      <p class="sub">A readable surface for daily artefacts, weekly synthesis, tasks, and intentions.</p>
+    </div>
+    <div id="status" class="status">Loading…</div>
+  </header>
+
+  <nav class="tabs shell">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="daily">Daily</button>
+    <button class="tab" data-tab="weekly">Weekly</button>
+    <button class="tab" data-tab="tasks">Tasks</button>
+    <button class="tab" data-tab="intentions">Intentions</button>
+  </nav>
+
+  <main class="shell">
+    <section id="overview" class="panel active"></section>
+    <section id="daily" class="panel"></section>
+    <section id="weekly" class="panel"></section>
+    <section id="tasks" class="panel"></section>
+    <section id="intentions" class="panel"></section>
+  </main>
+
+  <footer class="shell footer">
+    <small>This interface is intentionally simple and read-oriented.</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
