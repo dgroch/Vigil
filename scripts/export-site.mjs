@@ -68,6 +68,20 @@ const latestCommitment = state.active?.commitments?.[0]?.commitment || '';
 const latestHaunting = state.active?.hauntings?.[0]?.tension || '';
 const latestJournal = state.recentJournal?.at(-1)?.content || '';
 
+function loadCronLlmLoad() {
+  try {
+    const raw = execFileSync('node', ['scripts/estimate-cron-llm-load.mjs'], {
+      cwd: source,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+const cronLlmLoad = loadCronLlmLoad();
+
 // Parse trends from consciousness/state/trends.md
 function parseTrends(text) {
   if (!text.trim()) return null;
@@ -96,6 +110,7 @@ const site = {
     description: latestJournal || "A readable surface for Vigil's daily artefacts, weekly summaries, tasks, and intentions."
   },
   trends,
+  cronLlmLoad,
   daily,
   weekly,
   tasks,
